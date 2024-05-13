@@ -7,21 +7,18 @@ import shutil
 
 class QLearningAgent:
     """
-    Q-learning agent for the CartPole environment.
-
-    This class implements a Q-learning agent that learns a Q-table to determine
-    the best action to take in each state of the CartPole environment.
+    Q-learning agent for CartPole environment.
 
     Attributes:
-        env (CartPole): The CartPole environment instance.
-        gamma (float): Discount factor for future rewards (default: 0.99).
-        alpha (float): Learning rate (default: 0.1).
-        epsilon (float): Exploration rate (default: 1.0).
-        episodes (int): Number of episodes to train for.
-        is_learning (bool): True for training, False for testing.
-        decay_rate (float): Rate at which epsilon decays over episodes.
-        total_episodes_trained (int): Total episodes the agent has been trained for.
-        q_table (np.array): The Q-table storing state-action values.
+        env: The CartPole environment.
+        gamma: Discount factor for future rewards.
+        alpha: Learning rate.
+        epsilon: Exploration rate.
+        episodes: Number of episodes to train for.
+        is_learning: Boolean indicating whether the agent is in learning mode.
+        model_file: Path to a pre-trained model file.
+        total_episodes_trained: Total number of episodes the agent has been trained for.
+        q_table: The Q-table storing state-action values.
     """
 
     def __init__(
@@ -46,8 +43,7 @@ class QLearningAgent:
 
         if self.is_learning:
             print(
-                f"Learning mode on: training agent with alpha: {self.alpha}, "
-                f"gamma: {self.gamma}, epsilon: {self.epsilon}, for {self.episodes} episodes"
+                f"Learning mode on: training agent on alpha: {self.alpha}, gamma: {self.gamma}, epsilon : {self.epsilon}, with {self.episodes} episodes"
             )
         else:
             print("Visualization mode on")
@@ -64,14 +60,7 @@ class QLearningAgent:
             self.q_table = self._create_q_table()
 
     def _create_q_table(self):
-        """
-        Creates the Q-table with dimensions based on the digitized state space.
-
-        The Q-table has dimensions corresponding to the number of bins for each state
-        variable (cart position, cart velocity, pole angle, pole angular velocity)
-        and the number of possible actions. Each entry in the Q-table represents
-        the expected reward for taking a particular action in a particular state.
-        """
+        """Creates the Q-table for the CartPole environment."""
         pos_space = np.linspace(-2.4, 2.4, 10)
         vel_space = np.linspace(-4, 4, 10)
         ang_space = np.linspace(-0.2095, 0.2095, 10)
@@ -90,15 +79,11 @@ class QLearningAgent:
         """
         Chooses an action based on the current state and epsilon-greedy policy.
 
-        With probability epsilon, the agent explores by choosing a random action.
-        Otherwise, it exploits by choosing the action with the highest Q-value
-        for the given state.
-
         Args:
-            state (list): The current digitized state of the environment.
+            state: The current state of the environment.
 
         Returns:
-            int: The chosen action.
+            The chosen action.
         """
         if self.is_learning and np.random.random() < self.epsilon:
             return random.choice(range(self.env.get_action_space()))
@@ -106,22 +91,15 @@ class QLearningAgent:
             return np.argmax(self.q_table[state[0], state[1], state[2], state[3], :])
 
     def save_checkpoint(self, filename):
-        """Saves the current Q-table to a file."""
+        """Saves the current state of the Q-table to a file."""
         with open(filename, "wb") as f:
             pickle.dump(self.q_table, f)
         print(f"Checkpoint saved: {filename}")
 
     def train(self):
-        """
-        Trains the Q-learning agent using the Q-learning algorithm.
-
-        Runs the agent for a specified number of episodes, updating the Q-table
-        based on the rewards received and the agent's actions. Saves checkpoints
-        periodically and at the end of training.
-        """
+        """Trains the Q-learning agent."""
         os.makedirs("models/checkpoints", exist_ok=True)
         total_episode_rewards = []
-
         for episode in range(self.episodes):
             episode_rewards = 0
             state = self.env.reset()
@@ -129,8 +107,6 @@ class QLearningAgent:
             while not done:
                 action = self.policy(state)
                 next_state, reward, done, _, _ = self.env.step(action)
-
-                # Update Q-table using the Q-learning update rule
                 max_next_value = np.max(
                     self.q_table[
                         next_state[0],
@@ -147,32 +123,27 @@ class QLearningAgent:
                     + self.gamma * max_next_value
                     - self.q_table[state[0], state[1], state[2], state[3], action]
                 )
-
                 episode_rewards += reward
                 state = next_state
 
-            self.epsilon -= self.decay_rate  # Decay exploration rate
+            self.epsilon -= self.decay_rate
             total_episode_rewards.append(episode_rewards)
             mean_rewards = np.mean(total_episode_rewards[-100:])
 
             if episode % 100 == 0:
                 print(
-                    f"Episode: {episode + self.total_episodes_trained} "
-                    f"Rewards: {episode_rewards}  Epsilon: {self.epsilon:0.2f}  "
-                    f"Mean Rewards {mean_rewards:0.1f}"
+                    f"Episode: {episode + self.total_episodes_trained} Rewards: {episode_rewards}  Epsilon: {self.epsilon:0.2f}  Mean Rewards {mean_rewards:0.1f}"
                 )
 
             if mean_rewards >= 1000:
                 print(f"Mean rewards: {mean_rewards} - no need to train model longer")
                 break
 
-            # Save checkpoint every 1000 episodes
             if episode % 1000 == 0:
                 self.save_checkpoint(
                     f"models/checkpoints/Q_table_epoch_{self.total_episodes_trained + episode}.pkl"
                 )
 
-        # Save final model
         self.save_checkpoint(
             f"models/Q_table_{self.total_episodes_trained + self.episodes}.pkl"
         )
@@ -185,12 +156,7 @@ class QLearningAgent:
         print("All checkpoint files deleted.")
 
     def test(self):
-        """
-        Tests the trained Q-learning agent.
-
-        Runs the agent in the environment for a specified number of episodes,
-        using the learned Q-table to choose actions, and prints the episode rewards.
-        """
+        """Tests the trained Q-learning agent."""
         for episode in range(self.episodes):
             episode_rewards = 0
             state = self.env.reset()
@@ -202,11 +168,10 @@ class QLearningAgent:
                 state = next_state
             print(f"Episode: {episode} Rewards: {episode_rewards}")
 
-        self.env.env.close()
-
     def apply(self):
         """Starts the training or testing process based on is_learning flag."""
         if self.is_learning:
             self.train()
+
         else:
             self.test()

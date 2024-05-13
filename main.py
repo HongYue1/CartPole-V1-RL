@@ -5,30 +5,11 @@ from q_learning_agent import QLearningAgent
 
 
 def get_episode_count_from_filename(filename):
-    """
-    Extracts the episode count from the filename of a saved model.
-
-    The filename is assumed to be in the format 'Q_table_epoch_<episode_count>.pkl'.
-
-    Args:
-        filename (str): The filename of the saved model.
-
-    Returns:
-        int: The episode count extracted from the filename.
-    """
     return int(os.path.splitext(os.path.basename(filename))[0].split("_")[-1])
 
 
 def display_available_models():
-    """
-    Displays a list of available pre-trained models in the 'models' directory.
-
-    Allows the user to select a model to load for testing or continued training.
-
-    Returns:
-        str or None: The full path to the selected model file, or None if no
-                     model is selected or no models are found.
-    """
+    """Displays available pre-trained models in the 'models' directory."""
     models_dir = "models"
     files = glob.glob(os.path.join(models_dir, "*.pkl"))
     if not files:
@@ -52,31 +33,22 @@ def display_available_models():
 
 
 def train_new_model():
-    """
-    Trains a new Q-learning agent from scratch.
-
-    Prompts the user for the number of episodes to train for and then creates and
-    trains a QLearningAgent with default hyperparameters.
-    """
+    """Trains a new Q-learning agent."""
+    gamma = 0.99  # Discount factor
+    alpha = 0.1  # Learning rate
+    epsilon = 1.0  # Exploration rate
     episodes = int(input("Enter number of episodes to train for: "))
 
     cart_pole = CartPole(is_learning=True)
-    agent = QLearningAgent(cart_pole, episodes=episodes)
+    agent = QLearningAgent(
+        cart_pole, gamma=gamma, alpha=alpha, epsilon=epsilon, episodes=episodes
+    )
     agent.apply()
     input("Press any key to continue...")
 
 
 def continue_training_model(model_file):
-    """
-    Continues training a pre-trained Q-learning agent.
-
-    Loads the Q-table from the specified model file and prompts the user for
-    the number of additional episodes to train for. Then continues training the
-    agent from where it left off.
-
-    Args:
-        model_file (str): The path to the pre-trained model file to load.
-    """
+    """Continues training a pre-trained Q-learning agent."""
     episode_count = get_episode_count_from_filename(model_file)
     episodes = int(input("Enter number of additional episodes to train for: "))
 
@@ -93,15 +65,7 @@ def continue_training_model(model_file):
 
 
 def test_model(model_file):
-    """
-    Tests a pre-trained Q-learning agent.
-
-    Loads the Q-table from the specified model file and runs the agent for
-    a specified number of episodes, displaying the rewards obtained in each episode.
-
-    Args:
-        model_file (str): The path to the pre-trained model file to load.
-    """
+    """Tests a pre-trained Q-learning agent."""
     episode_count = get_episode_count_from_filename(model_file)
     episodes = int(input("Enter number of episodes to test for: "))
 
@@ -118,12 +82,7 @@ def test_model(model_file):
 
 
 def main():
-    """
-    Main function for the CartPole Q-learning program.
-
-    Presents a menu to the user with options to train a new model, continue
-    training a pre-trained model, test a pre-trained model, or exit.
-    """
+    """Main function for the CartPole Q-learning program."""
     while True:
         print("\nChoose an option:")
         print("1. Train a new model")
